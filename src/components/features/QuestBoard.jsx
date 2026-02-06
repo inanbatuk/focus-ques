@@ -110,8 +110,9 @@ const QuestBoard = () => {
                     <option value="hard">Hard (500 XP)</option>
                 </select>
 
-                <Button type="submit" style={{ borderRadius: '12px', padding: '12px 24px' }}>
-                    <Plus size={20} />
+                <Button type="submit" style={{ borderRadius: '12px', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                    <Plus size={18} />
+                    <span>Add Quest</span>
                 </Button>
             </form>
 
