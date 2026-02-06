@@ -1,0 +1,122 @@
+:root {
+  /* Minimalist Light Theme */
+  --bg-primary: #f3f4f6;
+  /* Soft cool gray */
+  --bg-secondary: #ffffff;
+  /* Pure white for cards */
+  --text-primary: #111827;
+  /* Dark gray for headings */
+  --text-secondary: #6b7280;
+  /* Medium gray for subtitles */
+
+  /* Action Colors - Bold & Clear */
+  --accent-primary: #2563eb;
+  /* Royal Blue for primary actions */
+  --accent-secondary: #4f46e5;
+  /* Indigo for progress/levels */
+  --accent-success: #059669;
+  /* Green for completion */
+  --accent-danger: #dc2626;
+  /* Red for stopping/deleting */
+  --accent-warning: #d97706;
+
+  /* Glass/Card Effects - Subtle shadows instead of blurs */
+  --glass-bg: #ffffff;
+  --glass-border: #e5e7eb;
+  --glass-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  /* Modern tight spacing */
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: var(--spacing-md);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-10px);
+  }
+
+  60% {
+    transform: translateY(-5px);
+  }
+}
