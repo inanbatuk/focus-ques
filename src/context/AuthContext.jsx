@@ -28,17 +28,27 @@ export const AuthProvider = ({ children }) => {
         }
 
         const db = getAuthDb();
-        if (db[username] && db[username] === password) {
+        const userRecord = db[username];
+
+        if (!userRecord) {
+            setAuthError("User not found");
+            return false;
+        }
+
+        // Handle legacy string passwords vs new object storage
+        const storedPassword = typeof userRecord === 'string' ? userRecord : userRecord.password;
+
+        if (storedPassword === password) {
             setUser(username);
             localStorage.setItem('fq_last_user', username);
             return true;
         } else {
-            setAuthError("Invalid username or password");
+            setAuthError("Invalid password");
             return false;
         }
     };
 
-    const register = (username, password) => {
+    const register = (username, password, securityQuestion, securityAnswer) => {
         setAuthError(null);
         if (!username || !password) {
             setAuthError("Username and password required");
@@ -56,14 +66,52 @@ export const AuthProvider = ({ children }) => {
             return false;
         }
 
-        // Save new user
-        db[username] = password;
+        // Save new user with security question
+        db[username] = {
+            password,
+            question: securityQuestion || "What is your favorite color?", // Default if missing
+            answer: securityAnswer ? securityAnswer.toLowerCase() : "blue"
+        };
+
         localStorage.setItem('fq_auth_db', JSON.stringify(db));
 
         // Auto login
         setUser(username);
         localStorage.setItem('fq_last_user', username);
         return true;
+    };
+
+    const resetPassword = (username, securityAnswer, newPassword) => {
+        setAuthError(null);
+        const db = getAuthDb();
+        const userRecord = db[username];
+
+        if (!userRecord) {
+            setAuthError("User not found");
+            return false;
+        }
+
+        if (typeof userRecord === 'string') {
+            setAuthError("Security question not set for this account (Legacy user).");
+            return false;
+        }
+
+        if (userRecord.answer !== securityAnswer.toLowerCase()) {
+            setAuthError("Incorrect security answer.");
+            return false;
+        }
+
+        // Update password
+        db[username] = { ...userRecord, password: newPassword };
+        localStorage.setItem('fq_auth_db', JSON.stringify(db));
+        return true;
+    };
+
+    const getSecurityQuestion = (username) => {
+        const db = getAuthDb();
+        const userRecord = db[username];
+        if (!userRecord || typeof userRecord === 'string') return null;
+        return userRecord.question;
     };
 
     const guestLogin = () => {
@@ -78,7 +126,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, authError, login, register, guestLogin, logout }}>
+        <AuthContext.Provider value={{ user, authError, login, register, guestLogin, logout, resetPassword, getSecurityQuestion }}>
             {children}
         </AuthContext.Provider>
     );
