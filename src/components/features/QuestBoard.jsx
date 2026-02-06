@@ -33,23 +33,22 @@ const QuestBoard = () => {
                 </span>
             </div>
 
-            {/* Unified Input Bar */}
             <form
                 onSubmit={handleAdd}
                 style={{
                     marginBottom: '32px',
                     background: 'white',
-                    padding: '8px',
+                    padding: '12px',
                     borderRadius: '16px',
                     border: '1px solid var(--glass-border)',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
                     display: 'flex',
                     flexWrap: 'wrap',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '12px'
                 }}
             >
-                <div style={{ flex: 2, minWidth: '200px' }}>
+                <div style={{ flex: '10 1 250px' }}>
                     <input
                         type="text"
                         placeholder="What needs to be done?"
@@ -58,24 +57,35 @@ const QuestBoard = () => {
                         style={{
                             width: '100%',
                             padding: '12px 16px',
-                            border: 'none',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '10px',
                             outline: 'none',
                             fontSize: '1rem',
-                            background: 'transparent'
+                            background: '#f9fafb',
+                            transition: 'all 0.2s'
+                        }}
+                        onFocus={(e) => {
+                            e.target.style.background = 'white';
+                            e.target.style.borderColor = 'var(--accent-primary)';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.background = '#f9fafb';
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.boxShadow = 'none';
                         }}
                     />
                 </div>
-
-                <div style={{ height: '32px', width: '1px', background: '#e5e7eb', display: 'none' }} className="divider-lg" />
 
                 <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     style={{
-                        padding: '10px',
-                        border: 'none',
-                        background: '#f9fafb',
-                        borderRadius: '8px',
+                        flex: '1 1 120px',
+                        padding: '12px',
+                        border: '1px solid #e5e7eb',
+                        background: 'white',
+                        borderRadius: '10px',
                         color: 'var(--text-secondary)',
                         fontSize: '0.9rem',
                         fontWeight: '500',
@@ -94,10 +104,11 @@ const QuestBoard = () => {
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value)}
                     style={{
-                        padding: '10px',
-                        border: 'none',
-                        background: '#f9fafb',
-                        borderRadius: '8px',
+                        flex: '1 1 140px',
+                        padding: '12px',
+                        border: '1px solid #e5e7eb',
+                        background: 'white',
+                        borderRadius: '10px',
                         color: 'var(--text-secondary)',
                         fontSize: '0.9rem',
                         fontWeight: '500',
@@ -110,9 +121,19 @@ const QuestBoard = () => {
                     <option value="hard">Hard (500 XP)</option>
                 </select>
 
-                <Button type="submit" style={{ borderRadius: '12px', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                <Button type="submit" style={{
+                    flex: '1 1 120px',
+                    borderRadius: '12px',
+                    padding: '12px 24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap'
+                }}>
                     <Plus size={18} />
-                    <span>Add Quest</span>
+                    <span>Add</span>
                 </Button>
             </form>
 
