@@ -1,60 +1,33 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import Card from '../ui/Card';
-import { ArrowRight, UserPlus, LogIn, User, Lock, Sparkles, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Sparkles, ShieldCheck, LogIn, User } from 'lucide-react';
 
 const LoginScreen = () => {
-    const { login, register, guestLogin, resetPassword, getSecurityQuestion, authError } = useAuth();
+    const { login, register, guestLogin, resetPassword, authError } = useAuth();
     const [view, setView] = useState('login'); // 'login', 'register', 'reset'
-    const [resetStep, setResetStep] = useState(1); // 1: Enter Username, 2: Enter Answer + New PW
-
     const [formData, setFormData] = useState({
-        username: '',
+        email: '',
         password: '',
-        securityQuestion: 'What was the name of your first pet?',
-        securityAnswer: '',
-        newPassword: ''
+        username: ''
     });
-
-    const [fetchedQuestion, setFetchedQuestion] = useState(null);
-    const [localError, setLocalError] = useState(null);
+    const [resetSuccess, setResetSuccess] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        setLocalError(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLocalError(null);
+        setResetSuccess(false);
 
         if (view === 'register') {
-            if (!formData.securityAnswer) {
-                setLocalError("Please provide a security answer for password recovery.");
-                return;
-            }
-            register(formData.username, formData.password, formData.securityQuestion, formData.securityAnswer);
+            await register(formData.email, formData.password, formData.username);
         } else if (view === 'login') {
-            login(formData.username, formData.password);
+            await login(formData.email, formData.password);
         } else if (view === 'reset') {
-            if (resetStep === 1) {
-                // Fetch question
-                const question = getSecurityQuestion(formData.username);
-                if (question) {
-                    setFetchedQuestion(question);
-                    setResetStep(2);
-                } else {
-                    setLocalError("User not found or no security question set.");
-                }
-            } else {
-                // Perform Reset
-                const success = resetPassword(formData.username, formData.securityAnswer, formData.newPassword);
-                if (success) {
-                    alert("Password reset successful! Please login.");
-                    setView('login');
-                    setResetStep(1);
-                    setFormData({ ...formData, password: '', securityAnswer: '', newPassword: '' });
-                }
+            const success = await resetPassword(formData.email);
+            if (success) {
+                setResetSuccess(true);
             }
         }
     };
@@ -175,16 +148,42 @@ const LoginScreen = () => {
 
                     {view === 'reset' && (
                         <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-                            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Reset Password</h3>
+                            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: '#111827' }}>Reset Password</h3>
                             <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-                                {resetStep === 1 ? "Enter your username to find your account." : "Answer your security question."}
+                                Enter your email and we'll send you a reset link.
                             </p>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {/* USERNAME FIELD - Always visible except step 2 of reset */}
-                        {(view !== 'reset' || resetStep === 1) && (
+                        {/* EMAIL FIELD */}
+                        <div>
+                            <div style={{ position: 'relative' }}>
+                                <Mail size={20} color="#9ca3af" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="Email"
+                                    required
+                                    style={{
+                                        width: '100%', padding: '16px 16px 16px 48px',
+                                        borderRadius: '16px', border: 'none',
+                                        background: 'white',
+                                        fontSize: '1rem', fontWeight: '500',
+                                        color: '#1f2937', outline: 'none',
+                                        boxShadow: '0 4px 10px rgba(0,0,0,0.03)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onFocus={e => e.target.style.boxShadow = '0 8px 20px rgba(79, 70, 229, 0.1)'}
+                                    onBlur={e => e.target.style.boxShadow = '0 4px 10px rgba(0,0,0,0.03)'}
+                                />
+                            </div>
+                        </div>
+
+                        {/* USERNAME FIELD - Register Only */}
+                        {view === 'register' && (
                             <div>
                                 <div style={{ position: 'relative' }}>
                                     <User size={20} color="#9ca3af" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -194,6 +193,7 @@ const LoginScreen = () => {
                                         value={formData.username}
                                         onChange={handleChange}
                                         placeholder="Username"
+                                        required
                                         style={{
                                             width: '100%', padding: '16px 16px 16px 48px',
                                             borderRadius: '16px', border: 'none',
@@ -211,7 +211,7 @@ const LoginScreen = () => {
                         )}
 
                         {/* PASSWORD FIELD - Login & Register only */}
-                        {(view === 'login' || view === 'register') && (
+                        {view !== 'reset' && (
                             <div>
                                 <div style={{ position: 'relative' }}>
                                     <Lock size={20} color="#9ca3af" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -221,6 +221,7 @@ const LoginScreen = () => {
                                         value={formData.password}
                                         onChange={handleChange}
                                         placeholder="Password"
+                                        required
                                         style={{
                                             width: '100%', padding: '16px 16px 16px 48px',
                                             borderRadius: '16px', border: 'none',
@@ -237,77 +238,27 @@ const LoginScreen = () => {
                             </div>
                         )}
 
-                        {/* SECURITY QUESTION - Register Only */}
-                        {view === 'register' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <label style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500', marginLeft: '4px' }}>Security Question (for recovery)</label>
-                                <select
-                                    name="securityQuestion"
-                                    value={formData.securityQuestion}
-                                    onChange={handleChange}
-                                    style={{
-                                        width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e5e7eb',
-                                        background: '#f9fafb', fontSize: '0.9rem', color: '#374151', outline: 'none'
-                                    }}
-                                >
-                                    <option>What was the name of your first pet?</option>
-                                    <option>What is your mother's maiden name?</option>
-                                    <option>What was your first car?</option>
-                                    <option>What city were you born in?</option>
-                                </select>
-                                <input
-                                    type="text"
-                                    name="securityAnswer"
-                                    value={formData.securityAnswer}
-                                    onChange={handleChange}
-                                    placeholder="Your Answer"
-                                    style={{
-                                        width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e5e7eb',
-                                        background: 'white', fontSize: '0.9rem', outline: 'none'
-                                    }}
-                                />
+                        {/* Success Message - Reset */}
+                        {resetSuccess && (
+                            <div style={{
+                                padding: '12px', borderRadius: '12px',
+                                background: '#d1fae5', color: '#065f46',
+                                fontSize: '0.9rem', textAlign: 'center', fontWeight: '500',
+                                border: '1px solid #6ee7b7'
+                            }}>
+                                ✅ Password reset email sent! Check your inbox.
                             </div>
                         )}
 
-                        {/* RESET FLOW - Step 2 */}
-                        {view === 'reset' && resetStep === 2 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <div style={{ background: '#eff6ff', padding: '12px', borderRadius: '8px', color: '#1e40af', fontSize: '0.9rem', border: '1px solid #dbeafe' }}>
-                                    <strong>Question:</strong> {fetchedQuestion}
-                                </div>
-                                <input
-                                    type="text"
-                                    name="securityAnswer"
-                                    value={formData.securityAnswer}
-                                    onChange={handleChange}
-                                    placeholder="Your Answer"
-                                    style={{
-                                        width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e5e7eb',
-                                        fontSize: '1rem', outline: 'none'
-                                    }}
-                                />
-                                <input
-                                    type="password"
-                                    name="newPassword"
-                                    value={formData.newPassword}
-                                    onChange={handleChange}
-                                    placeholder="New Password"
-                                    style={{
-                                        width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #e5e7eb',
-                                        fontSize: '1rem', outline: 'none'
-                                    }}
-                                />
-                            </div>
-                        )}
-
-                        {(authError || localError) && (
+                        {/* Error Message */}
+                        {authError && (
                             <div style={{
                                 padding: '10px', borderRadius: '12px',
                                 background: '#fee2e2', color: '#dc2626',
                                 fontSize: '0.9rem', textAlign: 'center', fontWeight: '500',
                                 border: '1px solid #fecaca'
                             }}>
-                                {authError || localError}
+                                {authError}
                             </div>
                         )}
 
@@ -334,7 +285,7 @@ const LoginScreen = () => {
                             {view === 'register' ? (
                                 <><ShieldCheck size={20} /> Create Hero Account</>
                             ) : view === 'reset' ? (
-                                resetStep === 1 ? <>Find Account <ArrowRight size={20} /></> : <>Reset Password <Sparkles size={20} /></>
+                                <>Send Reset Link</>
                             ) : (
                                 <><LogIn size={20} /> Enter Realm</>
                             )}
@@ -345,7 +296,7 @@ const LoginScreen = () => {
                         {view === 'login' && (
                             <button
                                 type="button"
-                                onClick={() => { setView('reset'); setResetStep(1); setFormData({ ...formData, username: '' }); }}
+                                onClick={() => setView('reset')}
                                 style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem' }}
                             >
                                 Forgot Password?
@@ -354,10 +305,10 @@ const LoginScreen = () => {
 
                         {view === 'reset' && (
                             <button
-                                onClick={() => setView('login')}
+                                onClick={() => { setView('login'); setResetSuccess(false); }}
                                 style={{ background: 'none', border: 'none', color: '#6b7280', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem' }}
                             >
-                                Cancel
+                                Back to Login
                             </button>
                         )}
 
@@ -365,6 +316,7 @@ const LoginScreen = () => {
                             <>
                                 <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Just passing through?</p>
                                 <button
+                                    type="button"
                                     onClick={guestLogin}
                                     style={{
                                         background: 'transparent',

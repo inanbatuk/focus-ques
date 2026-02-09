@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
 
@@ -7,127 +8,111 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [authError, setAuthError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if there's a persisted session
-        const lastUser = localStorage.getItem('fq_last_user');
-        if (lastUser) {
-            setUser(lastUser);
-        }
+        // Check active session on mount
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
+
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const getAuthDb = () => {
-        return JSON.parse(localStorage.getItem('fq_auth_db')) || {};
-    };
-
-    const login = (username, password) => {
+    const login = async (email, password) => {
         setAuthError(null);
-        if (!username || !password) {
-            setAuthError("Username and password required");
-            return false;
-        }
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        const db = getAuthDb();
-        const userRecord = db[username];
-
-        if (!userRecord) {
-            setAuthError("User not found");
-            return false;
-        }
-
-        // Handle legacy string passwords vs new object storage
-        const storedPassword = typeof userRecord === 'string' ? userRecord : userRecord.password;
-
-        if (storedPassword === password) {
-            setUser(username);
-            localStorage.setItem('fq_last_user', username);
+            if (error) throw error;
             return true;
-        } else {
-            setAuthError("Invalid password");
+        } catch (error) {
+            setAuthError(error.message);
             return false;
         }
     };
 
-    const register = (username, password, securityQuestion, securityAnswer) => {
+    const register = async (email, password, username) => {
         setAuthError(null);
-        if (!username || !password) {
-            setAuthError("Username and password required");
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        username: username,
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            // Check if email confirmation is required
+            if (data?.user && !data.session) {
+                setAuthError("Please check your email to confirm your account.");
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            setAuthError(error.message);
             return false;
         }
-
-        const db = getAuthDb();
-        const lowerUsername = username.toLowerCase();
-
-        // Check for duplicate (case-insensitive)
-        const userExists = Object.keys(db).some(k => k.toLowerCase() === lowerUsername);
-
-        if (userExists) {
-            setAuthError("Username already taken (try another)");
-            return false;
-        }
-
-        // Save new user with security question
-        db[username] = {
-            password,
-            question: securityQuestion || "What is your favorite color?", // Default if missing
-            answer: securityAnswer ? securityAnswer.toLowerCase() : "blue"
-        };
-
-        localStorage.setItem('fq_auth_db', JSON.stringify(db));
-
-        // Auto login
-        setUser(username);
-        localStorage.setItem('fq_last_user', username);
-        return true;
     };
 
-    const resetPassword = (username, securityAnswer, newPassword) => {
+    const resetPassword = async (email) => {
         setAuthError(null);
-        const db = getAuthDb();
-        const userRecord = db[username];
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin,
+            });
 
-        if (!userRecord) {
-            setAuthError("User not found");
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            setAuthError(error.message);
             return false;
         }
-
-        if (typeof userRecord === 'string') {
-            setAuthError("Security question not set for this account (Legacy user).");
-            return false;
-        }
-
-        if (userRecord.answer !== securityAnswer.toLowerCase()) {
-            setAuthError("Incorrect security answer.");
-            return false;
-        }
-
-        // Update password
-        db[username] = { ...userRecord, password: newPassword };
-        localStorage.setItem('fq_auth_db', JSON.stringify(db));
-        return true;
-    };
-
-    const getSecurityQuestion = (username) => {
-        const db = getAuthDb();
-        const userRecord = db[username];
-        if (!userRecord || typeof userRecord === 'string') return null;
-        return userRecord.question;
     };
 
     const guestLogin = () => {
         setAuthError(null);
-        setUser('Guest');
+        setUser({ email: 'guest@focusquest.app', user_metadata: { username: 'Guest' } });
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('fq_last_user');
+    const logout = async () => {
         setAuthError(null);
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+        } catch (error) {
+            setAuthError(error.message);
+        }
+    };
+
+    const value = {
+        user,
+        authError,
+        loading,
+        login,
+        register,
+        guestLogin,
+        logout,
+        resetPassword,
     };
 
     return (
-        <AuthContext.Provider value={{ user, authError, login, register, guestLogin, logout, resetPassword, getSecurityQuestion }}>
-            {children}
+        <AuthContext.Provider value={value}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };
